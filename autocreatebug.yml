@@ -6,9 +6,6 @@ pool:
 
 variables:
   pythonVersion: '3.x'  # Specify the Python version to use (3.x version will auto install the latest)
-  azureDevOpsPAT: $(azureDevOpsPAT)  # Personal Access Token for Azure DevOps authentication
-  organizationUrl: 'https://dev.azure.com/SignaTechServicesIndia'  # Replace with your Azure DevOps organization URL
-  projectName: 'SignaDart'  # Replace with your Azure DevOps project name
   bugType: 'Bug'  # Set the bug type (ensure this is set correctly)
 
 steps:
@@ -52,7 +49,7 @@ steps:
               \"System.Tags\": \"Automated; Bug\"
             }
           }" \
-          "$(https://dev.azure.com/SignaTechServicesIndia)/$(SignaDart)/_apis/wit/workitems/${{ variables.bugType }}?api-version=6.0"
+          "https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/${{ variables.bugType }}?api-version=6.0"
         
         exit $exit_code
       else

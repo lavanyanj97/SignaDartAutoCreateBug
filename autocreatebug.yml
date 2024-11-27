@@ -4,9 +4,16 @@ trigger:
       - main
 
 pool:
-  vmImage: 'ubuntu-latest'  # Use a Linux-based agent, or change to 'windows-latest' if needed
+  vmImage: 'ubuntu-latest'
 
 steps:
+  - checkout: self  # Ensure the repository is checked out
+
+  - script: |
+      pwd  # Print current working directory
+      ls -R  # List files recursively to check for file locations
+    displayName: 'List Files in Current Directory'
+
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '3.x'
@@ -27,9 +34,5 @@ steps:
     displayName: 'Install dependencies'
 
   - script: |
-      echo "ChromeDriver Path: $(which chromedriver)"
-    displayName: 'Verify ChromeDriver Path'
-
-  - script: |
-      python -m pytest tests/test_update.py
+      python -m pytest test_update.py  # Run pytest directly from the root directory
     displayName: 'Run Tests'

@@ -34,6 +34,7 @@ steps:
     displayName: 'Run Selenium Tests'
 
   # Check for test failures and raise a bug if any test fails
+    # Check for test failures and raise a bug if any test fails
   - script: |
       exit_code=$(cat pytest_exit_code.txt)
       if [ $exit_code -ne 0 ]; then
@@ -41,7 +42,7 @@ steps:
         
         # Ensure the PAT variable is passed correctly
         curl -X POST -H "Content-Type: application/json" \
-          -H "Authorization: Bearer $(azureDevOpsPAT)" \
+          -H "Authorization: Bearer $AZURE_DEVOPS_PAT" \  # Use the environment variable directly
           --data "{
             \"fields\": {
               \"System.Title\": \"Automated Test Failure: Selenium Tests\",

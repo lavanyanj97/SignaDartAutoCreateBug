@@ -13,21 +13,26 @@ steps:
       versionSpec: '3.x'
       addToPath: true
 
-  # Step 2: Checkout the repository
+  # Step 2: Checkout the repository containing your tests
   - checkout: self
 
-  # Step 3: Install dependencies
+  # Step 3: Install dependencies from requirements.txt
   - script: |
       python -m pip install --upgrade pip
       pip install -r requirements.txt
     displayName: 'Install dependencies'
 
-  # Step 4: Run the specific test file (test_update.py)
+  # Step 4: List files to check test_update.py existence
   - script: |
-      pytest -v test_update.py > result.log || exit 1
+      ls -la
+    displayName: 'List files in working directory'
+
+  # Step 5: Run the specific test file (test_update.py)
+  - script: |
+      pytest --tb=short -v test_update.py > result.log || exit 1
     displayName: 'Run Selenium Tests (test_update.py)'
 
-  # Step 5: Display result.log to diagnose failures
+  # Step 6: Display result.log to diagnose failures
   - script: |
       cat result.log
     displayName: 'Display result.log'

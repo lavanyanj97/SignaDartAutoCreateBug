@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-      - main  # Adjust this to match your branch name
+      - main  # This should be your main branch
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -22,17 +22,20 @@ steps:
       pip install -r requirements.txt
     displayName: 'Install dependencies'
 
-  # Step 4: List files to check test_update.py existence
+  # Step 4: List files to ensure test_update.py exists
   - script: |
+      echo "Listing files in the current directory:"
       ls -la
-    displayName: 'List files in working directory'
+    displayName: 'List files in current directory'
 
   # Step 5: Run the specific test file (test_update.py)
   - script: |
-      pytest --tb=short -v test_update.py > result.log || exit 1
+      echo "Running tests with pytest:"
+      pytest -v test_update.py || exit 1
     displayName: 'Run Selenium Tests (test_update.py)'
 
-  # Step 6: Display result.log to diagnose failures
+  # Step 6: Check the result log for detailed information
   - script: |
-      cat result.log
+      echo "Displaying result.log content:"
+      cat result.log || echo "result.log not found"
     displayName: 'Display result.log'

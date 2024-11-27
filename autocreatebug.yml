@@ -2,27 +2,31 @@ trigger:
 - main  # Trigger the pipeline on changes to the main branch (adjust based on your branch)
 
 pool:
-  vmImage: 'ubuntu-latest'  # Use a suitable VM image for your pipeline (you can also use 'windows-latest' if needed)
+  vmImage: 'ubuntu-latest'  # Use an Ubuntu VM image for the pipeline
 
 variables:
   pythonVersion: '3.x'  # Specify the Python version to use (3.x version will auto install the latest)
 
 steps:
+# Use the Python version specified in the variables
 - task: UsePythonVersion@0
   inputs:
     versionSpec: $(pythonVersion)  # Select Python version to install
     addToPath: true  # Adds Python to the system PATH
 
+# Install Google Chrome on Ubuntu
 - script: |
     sudo apt-get update
     sudo apt-get install -y google-chrome-stable  # Install Chrome on Ubuntu
   displayName: 'Install Google Chrome'
 
+# Install dependencies from requirements.txt
 - script: |
     python -m pip install --upgrade pip  # Upgrade pip to the latest version
     pip install -r requirements.txt  # Install dependencies from the requirements.txt file
   displayName: 'Install dependencies'
 
+# Run the Selenium tests with pytest
 - script: |
     pytest test_update.py --maxfail=1 --disable-warnings -q  # Run the pytest script
   displayName: 'Run Selenium Tests'

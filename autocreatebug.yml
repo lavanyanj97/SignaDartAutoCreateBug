@@ -1,32 +1,35 @@
 trigger:
-- main  # Trigger pipeline on changes to the main branch
+  branches:
+    include:
+      - main
 
 pool:
-  vmImage: 'ubuntu-latest'  # Use a hosted Ubuntu agent
+  vmImage: 'ubuntu-latest'  # Use a Linux-based agent, or change to 'windows-latest' if needed
 
 steps:
-# Step 1: Set up Python environment
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.x'  # Use the latest Python 3.x version
-    addToPath: true
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+      addToPath: true
 
-# Step 2: Install dependencies
-- script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt  # Assuming you have a requirements.txt file that includes dependencies like selenium, pytest, etc.
-    pip install webdriver-manager  # Install WebDriver manager for handling ChromeDriver
-  displayName: 'Install Dependencies'
+  - script: |
+      sudo apt-get update
+      sudo apt-get install -y libnss3 libgdk-pixbuf2.0-0 libdbus-glib-1-2 google-chrome-stable
+    displayName: 'Install Chrome dependencies'
 
-# Step 3: Run the Selenium tests with pytest
-- script: |
-    pytest test_update.py  # Replace with the relative path to your test file
-  displayName: 'Run Selenium Tests'
+  - script: |
+      pip install --upgrade webdriver-manager
+    displayName: 'Install webdriver-manager'
 
-# Step 4: Archive test results (optional, if you want to capture the results)
-- task: PublishTestResults@2
-  inputs:
-    testResultsFormat: 'JUnit'
-    testResultsFiles: '**/test-*.xml'  # Assuming you're using pytest with the --junit-xml option to generate XML results
-    failTaskOnFailedTests: true
-  displayName: 'Publish Test Results'
+  - script: |
+      rm -rf ~/.wdm  # Clear any cached drivers
+      pip install -r requirements.txt
+    displayName: 'Install dependencies'
+
+  - script: |
+      echo "ChromeDriver Path: $(which chromedriver)"
+    displayName: 'Verify ChromeDriver Path'
+
+  - script: |
+      python -m pytest tests/test_update.py
+    displayName: 'Run Tests'

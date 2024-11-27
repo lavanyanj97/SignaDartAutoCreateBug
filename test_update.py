@@ -36,10 +36,8 @@ def send_keys(driver, xpath, keys):
 @pytest.fixture(scope="module")
 def driver():
     options = Options()
-    options.add_argument("--headless")  # Run Chrome in headless mode
-    options.add_argument("--start-maximized")  # Optional: Start with maximized window
-    options.add_argument("--disable-gpu")  # Disable GPU acceleration (necessary for headless mode)
-    service = Service(ChromeDriverManager().install())  # Automatically installs the correct version of ChromeDriver
+    options.add_argument("--start-maximized")
+    service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
     driver.implicitly_wait(10)
     yield driver
@@ -50,7 +48,7 @@ def test_login(driver):
     click(driver, "//span[@class='block text-inherit w-full h-full rounded-md text-sm md:text-lg font-chivo font-semibold']")
     try:
         WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//h3[text()='Sign Up']"))
+            EC.presence_of_element_located((By.XPATH, "//h3[text()='Sign Ups']"))
         )
     except TimeoutException:
         pytest.fail("Element with text 'Sign Up' not found.")

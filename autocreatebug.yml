@@ -11,38 +11,38 @@ variables:
   projectName: 'SignaDart'  # Replace with your Azure DevOps project name
 
 steps:
-# Use the Python version specified in the variables
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: $(pythonVersion)  # Select Python version to install
-    addToPath: true  # Adds Python to the system PATH
+  # Use the Python version specified in the variables
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: $(pythonVersion)  # Select Python version to install
+      addToPath: true  # Adds Python to the system PATH
 
-# Install Google Chrome on Ubuntu
-- script: |
-    sudo apt-get update
-    sudo apt-get install -y google-chrome-stable  # Install Chrome on Ubuntu
-  displayName: 'Install Google Chrome'
+  # Install Google Chrome on Ubuntu
+  - script: |
+      sudo apt-get update
+      sudo apt-get install -y google-chrome-stable  # Install Chrome on Ubuntu
+    displayName: 'Install Google Chrome'
 
-# Install dependencies from requirements.txt
-- script: |
-    python -m pip install --upgrade pip  # Upgrade pip to the latest version
-    pip install -r requirements.txt  # Install dependencies from the requirements.txt file
-  displayName: 'Install dependencies'
+  # Install dependencies from requirements.txt
+  - script: |
+      python -m pip install --upgrade pip  # Upgrade pip to the latest version
+      pip install -r requirements.txt  # Install dependencies from the requirements.txt file
+    displayName: 'Install dependencies'
 
-# Run the Selenium tests with pytest
-- script: |
-    pytest test_update.py --maxfail=1 --disable-warnings -q > test_results.log 2>&1
-    echo $? > pytest_exit_code.txt
-  displayName: 'Run Selenium Tests'
+  # Run the Selenium tests with pytest
+  - script: |
+      pytest test_update.py --maxfail=1 --disable-warnings -q > test_results.log 2>&1
+      echo $? > pytest_exit_code.txt
+    displayName: 'Run Selenium Tests'
 
-# Check for test failures and raise a bug if any test fails
-- script: |
-    exit_code=$(cat pytest_exit_code.txt)
-    if [ $exit_code -ne 0 ]; then
-      echo "Tests failed. Creating a bug in Azure DevOps..."
-      curl -X POST -H "Content-Type: application/json" \
-        -H "Authorization: Bearer $(azureDevOpsPAT)" \
-        --data @- <<'EOF'
+  # Check for test failures and raise a bug if any test fails
+  - script: |
+      exit_code=$(cat pytest_exit_code.txt)
+      if [ $exit_code -ne 0 ]; then
+        echo "Tests failed. Creating a bug in Azure DevOps..."
+        curl -X POST -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $(azureDevOpsPAT)" \
+          --data @- <<'EOF'
         {
           "fields": {
             "System.Title": "Automated Test Failure: Selenium Tests",
@@ -50,9 +50,9 @@ steps:
             "System.Tags": "Automated; Bug"
           }
         }
-EOF
-      exit $exit_code
-    else
-      echo "All tests passed successfully."
-    fi
-  displayName: 'Check Test Results and Raise Bug'
+        EOF
+        exit $exit_code
+      else
+        echo "All tests passed successfully."
+      fi
+    displayName: 'Check Test Results and Raise Bug'

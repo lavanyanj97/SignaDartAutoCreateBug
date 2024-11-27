@@ -1,3 +1,11 @@
+trigger:
+  branches:
+    include:
+      - main  # Adjust this to match your branch name
+
+pool:
+  vmImage: 'ubuntu-latest'
+
 steps:
   # Step 1: Set up Python environment
   - task: UsePythonVersion@0
@@ -16,29 +24,10 @@ steps:
 
   # Step 4: Run the specific test file (test_update.py)
   - script: |
-      pytest test_update.py > result.log || exit 1
+      pytest -v test_update.py > result.log || exit 1
     displayName: 'Run Selenium Tests (test_update.py)'
 
   # Step 5: Display result.log to diagnose failures
   - script: |
       cat result.log
     displayName: 'Display result.log'
-
-  # Step 6: Check the result log for test failures and create a bug if any test fails
-  - script: |
-      if grep -q "FAILED" result.log; then
-        echo "Test failed! Creating a bug in Azure DevOps..."
-        curl -u :$(System.AccessToken) \
-             -X POST \
-             -H "Content-Type: application/json" \
-             -d '{
-                   "fields": {
-                     "System.Title": "Selenium Test Failure",
-                     "System.Description": "One or more Selenium tests failed during the pipeline run. Check the test results for more details.",
-                     "System.WorkItemType": "Bug",
-                     "System.Priority": "2"
-                   }
-                 }' \
-             https://dev.azure.com/{organization}/{project}/_apis/wit/workitems/$Bug?api-version=7.1-preview.1
-      fi
-    displayName: 'Create Bug if Test Fails'

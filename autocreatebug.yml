@@ -36,23 +36,25 @@ steps:
     displayName: 'Run Selenium Tests'
 
   # Check for test failures and raise a bug if any test fails
+  steps:
   - script: |
       exit_code=$(cat pytest_exit_code.txt)
       if [ $exit_code -ne 0 ]; then
         echo "Tests failed. Creating a bug in Azure DevOps..."
         curl -X POST -H "Content-Type: application/json" \
-          -H "Authorization: Bearer $AZURE_DEVOPS_PAT" \
+          -H "Authorization: Bearer $(azureDevOpsPAT)" \
           --data "{
             \"fields\": {
               \"System.Title\": \"Automated Test Failure: Selenium Tests\",
               \"System.Description\": \"The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$(cat test_results.log | sed 's/\"/\\\"/g')\",
               \"System.Tags\": \"Automated; Bug\"
             }
-          }"
+          }" \
+          "$(organizationUrl)/$(projectName)/_apis/wit/workitems/$bugType?api-version=6.0"
         exit $exit_code
       else
         echo "All tests passed successfully."
       fi
     displayName: 'Check Test Results and Raise Bug'
     env:
-      AZURE_DEVOPS_PAT: $(azureDevOpsPAT)  # Pass the secret variable as an environment variable to the script
+      AZURE_DEVOPS_PAT: $(azureDevOpsPAT)  # This passes the secret variable securely to the script

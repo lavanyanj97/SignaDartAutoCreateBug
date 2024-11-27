@@ -1,5 +1,5 @@
 trigger:
-- main  # Trigger the pipeline on changes to the main branch (adjust based on your branch)
+  - main  # Trigger the pipeline on changes to the main branch (adjust based on your branch)
 
 pool:
   vmImage: 'ubuntu-latest'  # Use an Ubuntu VM image for the pipeline

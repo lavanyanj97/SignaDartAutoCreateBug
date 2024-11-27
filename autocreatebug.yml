@@ -42,15 +42,13 @@ steps:
         echo "Tests failed. Creating a bug in Azure DevOps..."
         curl -X POST -H "Content-Type: application/json" \
           -H "Authorization: Bearer $AZURE_DEVOPS_PAT" \
-          --data @- <<'EOF'
-        {
-          "fields": {
-            "System.Title": "Automated Test Failure: Selenium Tests",
-            "System.Description": "The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$(cat test_results.log | sed 's/\"/\\\"/g')",
-            "System.Tags": "Automated; Bug"
-          }
-        }
-        EOF
+          --data "{
+            \"fields\": {
+              \"System.Title\": \"Automated Test Failure: Selenium Tests\",
+              \"System.Description\": \"The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$(cat test_results.log | sed 's/\"/\\\"/g')\",
+              \"System.Tags\": \"Automated; Bug\"
+            }
+          }"
         exit $exit_code
       else
         echo "All tests passed successfully."

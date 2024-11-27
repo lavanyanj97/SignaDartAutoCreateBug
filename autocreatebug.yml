@@ -41,15 +41,16 @@ steps:
     if [ $exit_code -ne 0 ]; then
       echo "Tests failed. Creating a bug in Azure DevOps..."
       curl -X POST -H "Content-Type: application/json" \
-      -H "Authorization: Bearer A0us9bS1c6qe5bub6CT5FGRR4JcmPDg7uadVFmw4D65bvtdPcBVdJQQJ99AKACAAAAAPnX9AAAASAZDO4GFA" \
-      --data '{
-        "fields": {
-          "System.Title": "Automated Test Failure: Selenium Tests",
-          "System.Description": "The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n'$(cat test_results.log | sed 's/"/\\"/g')'",
-          "System.Tags": "Automated; Bug"
+        -H "Authorization: Bearer A0us9bS1c6qe5bub6CT5FGRR4JcmPDg7uadVFmw4D65bvtdPcBVdJQQJ99AKACAAAAAPnX9AAAASAZDO4GFA" \
+        --data @- <<EOF
+        {
+          "fields": {
+            "System.Title": "Automated Test Failure: Selenium Tests",
+            "System.Description": "The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$(cat test_results.log | sed 's/"/\\"/g')",
+            "System.Tags": "Automated; Bug"
+          }
         }
-      }' \
-      $(organizationUrl)/$(projectName)/_apis/wit/workitems/$Bug?api-version=6.0
+EOF
       exit $exit_code
     else
       echo "All tests passed successfully."

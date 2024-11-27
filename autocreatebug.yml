@@ -42,7 +42,7 @@ steps:
         echo "Tests failed. Creating a bug in Azure DevOps..."
         curl -X POST -H "Content-Type: application/json" \
           -H "Authorization: Bearer $(azureDevOpsPAT)" \
-          --data @- <<'EOF'
+          --data @- <<EOF
         {
           "fields": {
             "System.Title": "Automated Test Failure: Selenium Tests",
@@ -50,7 +50,7 @@ steps:
             "System.Tags": "Automated; Bug"
           }
         }
-        EOF
+EOF
         exit $exit_code
       else
         echo "All tests passed successfully."

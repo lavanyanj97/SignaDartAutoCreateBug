@@ -1,38 +1,30 @@
-trigger:
-  branches:
-    include:
-      - main
-
 pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-  - checkout: self  # Ensure the repository is checked out
+- checkout: self
 
-  - script: |
-      pwd  # Print current working directory
-      ls -R  # List files recursively to check for file locations
-    displayName: 'List Files in Current Directory'
+# Set up Python version
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+    addToPath: true
 
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.x'
-      addToPath: true
+# Install Chrome and dependencies
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y wget curl unzip
+    sudo apt-get install -y google-chrome-stable
+  displayName: 'Install Chrome and dependencies'
 
-  - script: |
-      sudo apt-get update
-      sudo apt-get install -y libnss3 libgdk-pixbuf2.0-0 libdbus-glib-1-2 google-chrome-stable
-    displayName: 'Install Chrome dependencies'
+# Clear previous webdriver-manager cache and install dependencies
+- script: |
+    rm -rf ~/.wdm
+    pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install dependencies'
 
-  - script: |
-      pip install --upgrade webdriver-manager
-    displayName: 'Install webdriver-manager'
-
-  - script: |
-      rm -rf ~/.wdm  # Clear any cached drivers
-      pip install -r requirements.txt
-    displayName: 'Install dependencies'
-
-  - script: |
-      python -m pytest test_update.py  # Run pytest directly from the root directory
-    displayName: 'Run Tests'
+# Run the tests
+- script: |
+    python -m pytest test_update.py
+  displayName: 'Run Tests'

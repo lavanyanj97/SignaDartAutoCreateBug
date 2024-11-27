@@ -42,7 +42,7 @@ steps:
       echo "Tests failed. Creating a bug in Azure DevOps..."
       curl -X POST -H "Content-Type: application/json" \
         -H "Authorization: Bearer A0us9bS1c6qe5bub6CT5FGRR4JcmPDg7uadVFmw4D65bvtdPcBVdJQQJ99AKACAAAAAPnX9AAAASAZDO4GFA" \
-        --data @- <<EOF
+        --data @- <<'EOF'
         {
           "fields": {
             "System.Title": "Automated Test Failure: Selenium Tests",

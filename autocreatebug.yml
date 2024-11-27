@@ -1,11 +1,3 @@
-trigger:
-  branches:
-    include:
-      - main  # Trigger the pipeline on the 'main' branch
-
-pool:
-  vmImage: 'ubuntu-latest'
-
 steps:
   # Step 1: Set up Python environment
   - task: UsePythonVersion@0
@@ -13,7 +5,7 @@ steps:
       versionSpec: '3.x'
       addToPath: true
 
-  # Step 2: Checkout the repository containing your tests
+  # Step 2: Checkout the repository
   - checkout: self
 
   # Step 3: Install dependencies from requirements.txt
@@ -27,7 +19,12 @@ steps:
       pytest test_update.py > result.log || exit 1
     displayName: 'Run Selenium Tests (test_update.py)'
 
-  # Step 5: Check the result log for test failures and create a bug if any test fails
+  # Step 5: Display result.log to diagnose failures
+  - script: |
+      cat result.log
+    displayName: 'Display result.log'
+
+  # Step 6: Check the result log for test failures and create a bug if any test fails
   - script: |
       if grep -q "FAILED" result.log; then
         echo "Test failed! Creating a bug in Azure DevOps..."

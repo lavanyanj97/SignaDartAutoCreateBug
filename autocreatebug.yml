@@ -6,6 +6,9 @@ pool:
 
 variables:
   pythonVersion: '3.x'  # Specify the Python version to use (3.x version will auto install the latest)
+  azureDevOpsPAT: 'A0us9bS1c6qe5bub6CT5FGRR4JcmPDg7uadVFmw4D65bvtdPcBVdJQQJ99AKACAAAAAPnX9AAAASAZDO4GFA'  # Personal Access Token for Azure DevOps authentication
+  organizationUrl: 'https://dev.azure.com/SignaTechServicesIndia'  # Replace with your Azure DevOps organization URL
+  projectName: 'SignaDart'  # Replace with your Azure DevOps project name
 
 steps:
 # Use the Python version specified in the variables
@@ -28,5 +31,27 @@ steps:
 
 # Run the Selenium tests with pytest
 - script: |
-    pytest test_update.py --maxfail=1 --disable-warnings -q  # Run the pytest script
+    pytest test_update.py --maxfail=1 --disable-warnings -q > test_results.log 2>&1
+    echo $? > pytest_exit_code.txt
   displayName: 'Run Selenium Tests'
+
+# Check for test failures and raise a bug if any test fails
+- script: |
+    exit_code=$(cat pytest_exit_code.txt)
+    if [ $exit_code -ne 0 ]; then
+      echo "Tests failed. Creating a bug in Azure DevOps..."
+      curl -X POST -H "Content-Type: application/json" \
+      -H "Authorization: Bearer A0us9bS1c6qe5bub6CT5FGRR4JcmPDg7uadVFmw4D65bvtdPcBVdJQQJ99AKACAAAAAPnX9AAAASAZDO4GFA" \
+      --data '{
+        "fields": {
+          "System.Title": "Automated Test Failure: Selenium Tests",
+          "System.Description": "The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n'$(cat test_results.log | sed 's/"/\\"/g')'",
+          "System.Tags": "Automated; Bug"
+        }
+      }' \
+      $(organizationUrl)/$(projectName)/_apis/wit/workitems/$Bug?api-version=6.0
+      exit $exit_code
+    else
+      echo "All tests passed successfully."
+    fi
+  displayName: 'Check Test Results and Raise Bug'

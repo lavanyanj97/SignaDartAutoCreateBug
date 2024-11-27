@@ -36,7 +36,6 @@ steps:
     displayName: 'Run Selenium Tests'
 
   # Check for test failures and raise a bug if any test fails
-  steps:
   - script: |
       exit_code=$(cat pytest_exit_code.txt)
       if [ $exit_code -ne 0 ]; then

@@ -6,7 +6,7 @@ pool:
 
 variables:
   pythonVersion: '3.x'  # Specify the Python version to use (3.x version will auto install the latest)
-  azureDevOpsPAT: 'A0us9bS1c6qe5bub6CT5FGRR4JcmPDg7uadVFmw4D65bvtdPcBVdJQQJ99AKACAAAAAPnX9AAAASAZDO4GFA'  # Personal Access Token for Azure DevOps authentication
+  azureDevOpsPAT: $(azureDevOpsPAT)  # Personal Access Token for Azure DevOps authentication
   organizationUrl: 'https://dev.azure.com/SignaTechServicesIndia'  # Replace with your Azure DevOps organization URL
   projectName: 'SignaDart'  # Replace with your Azure DevOps project name
 
@@ -41,7 +41,7 @@ steps:
     if [ $exit_code -ne 0 ]; then
       echo "Tests failed. Creating a bug in Azure DevOps..."
       curl -X POST -H "Content-Type: application/json" \
-        -H "Authorization: Bearer A0us9bS1c6qe5bub6CT5FGRR4JcmPDg7uadVFmw4D65bvtdPcBVdJQQJ99AKACAAAAAPnX9AAAASAZDO4GFA" \
+        -H "Authorization: Bearer $(azureDevOpsPAT)" \
         --data @- <<'EOF'
         {
           "fields": {

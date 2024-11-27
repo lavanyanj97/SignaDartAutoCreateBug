@@ -36,8 +36,10 @@ def send_keys(driver, xpath, keys):
 @pytest.fixture(scope="module")
 def driver():
     options = Options()
-    options.add_argument("--start-maximized")
-    service = Service(ChromeDriverManager().install())
+    options.add_argument("--headless")  # Run Chrome in headless mode
+    options.add_argument("--start-maximized")  # Optional: Start with maximized window
+    options.add_argument("--disable-gpu")  # Disable GPU acceleration (necessary for headless mode)
+    service = Service(ChromeDriverManager().install())  # Automatically installs the correct version of ChromeDriver
     driver = webdriver.Chrome(service=service, options=options)
     driver.implicitly_wait(10)
     yield driver

@@ -42,7 +42,7 @@ steps:
         # Ensure the PAT variable is passed correctly
         echo "Using PAT: $AZURE_DEVOPS_PAT"  # Debug line (do not print PAT in production)
 
-        # Correct URL for creating a work item (Bug)
+        # Corrected URL for creating a work item (Bug)
         curl -X POST -H "Content-Type: application/json" \
           -H "Authorization: Bearer $AZURE_DEVOPS_PAT" \
           --data "{\"fields\":{

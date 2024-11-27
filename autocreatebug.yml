@@ -33,7 +33,7 @@ steps:
       echo $? > pytest_exit_code.txt
     displayName: 'Run Selenium Tests'
 
-    # Check for test failures and raise a bug if any test fails
+  # Check for test failures and raise a bug if any test fails
   - script: |
       exit_code=$(cat pytest_exit_code.txt)
       if [ $exit_code -ne 0 ]; then
@@ -42,9 +42,15 @@ steps:
         # Ensure the PAT variable is passed correctly
         echo "Using PAT: $AZURE_DEVOPS_PAT"  # Debug line (do not print PAT in production)
 
+        # Correct URL for creating a work item (Bug)
         curl -X POST -H "Content-Type: application/json" \
           -H "Authorization: Bearer $AZURE_DEVOPS_PAT" \
-          --data "{\"fields\":{\"System.Title\":\"Automated Test Failure: Selenium Tests\",\"System.Description\":\"The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$(cat test_results.log | sed 's/\"/\\\"/g')\",\"System.Tags\":\"Automated; Bug\"}}" \
+          --data "{\"fields\":{
+            \"System.Title\": \"Automated Test Failure: Selenium Tests\",
+            \"System.Description\": \"The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$(cat test_results.log | sed 's/\"/\\\"/g')\",
+            \"System.Tags\": \"Automated; Bug\",
+            \"System.WorkItemType\": \"Bug\"
+          }}" \
           "https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/${bugType}?api-version=6.0"
         
         exit $exit_code

@@ -7,9 +7,9 @@ pool:
 variables:
   pythonVersion: '3.x'  # Specify the Python version to use
   bugType: 'Bug'  # Set the work item type (Bug)
+  azureDevOpsPAT: $(azureDevOpsPAT)  # Personal Access Token stored in pipeline variables
   azureDevOpsOrganization: 'SignaTechServicesIndia'  # Your Azure DevOps organization
   azureDevOpsProject: 'SignaDart'  # Your Azure DevOps project
-  azureDevOpsPAT: $(azureDevOpsPAT)  # Personal Access Token stored in pipeline variables
 
 steps:
   # Install the specified Python version
@@ -47,8 +47,7 @@ steps:
           "fields": {
             "System.Title": "Automated Bug: Selenium Tests Failed",
             "System.Description": "Selenium tests failed during the pipeline run. Please check the logs for more details.",
-            "System.WorkItemType": "Bug",
-            "System.Tags": "Selenium, Bug"
+            "System.WorkItemType": "Bug"
           }
         }'
 

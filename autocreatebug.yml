@@ -6,7 +6,7 @@ pool:
 
 variables:
   pythonVersion: '3.x'  # Specify the Python version to use
-  bugType: 'Bug'  # Set the work item type to 'Bug'
+  bugType: 'Bug'  # Set the work item type for bugs
 
 steps:
   # Use the specified Python version
@@ -14,15 +14,14 @@ steps:
     inputs:
       versionSpec: $(pythonVersion)
       addToPath: true
-    displayName: 'Set up Python'
 
-  # Install Google Chrome
+  # Install Google Chrome on the Ubuntu agent
   - script: |
       sudo apt-get update
       sudo apt-get install -y google-chrome-stable
     displayName: 'Install Google Chrome'
 
-  # Install dependencies
+  # Install dependencies from requirements.txt
   - script: |
       python -m pip install --upgrade pip
       pip install -r requirements.txt
@@ -34,20 +33,13 @@ steps:
       echo $? > pytest_exit_code.txt
     displayName: 'Run Selenium Tests'
 
-  # Debug variable resolution (optional for troubleshooting)
-  - script: |
-      echo "Debugging Variable Resolution"
-      echo "Bug type: $(bugType)"
-      echo "URL: https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/$(bugType)?api-version=6.0"
-    displayName: 'Debug Variable Resolution'
-
   # Check test results and raise a bug if tests fail
-    - script: |
+  - script: |
       exit_code=$(cat pytest_exit_code.txt)
       if [ $exit_code -ne 0 ]; then
         echo "Tests failed. Creating a bug in Azure DevOps..."
 
-        # Read the test results log and escape special characters
+        # Read and escape the test results log
         log_output=$(cat test_results.log | sed 's/"/\\"/g')
 
         # Use Azure DevOps API to create a bug

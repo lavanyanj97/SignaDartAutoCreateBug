@@ -31,10 +31,8 @@ steps:
       if [ $exitCode -ne 0 ]; then
         echo "Tests failed, creating a bug in Azure DevOps..."
         
-        # Hardcoded Azure DevOps values
-        organization="SignaTechServicesIndia"
-        project="SignaDart"
-        pat="A0us9bS1c6qe5bub6CT5FGRR4JcmPDg7uadVFmw4D65bvtdPcBVdJQQJ99AKACAAAAAPnX9AAAASAZDO4GFA"
+        # Hardcode the bug URL with the correct organization and project
+        bugUrl="https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/Bug?api-version=7.1-preview.2"
         
         # Prepare the bug data (you can modify this data according to your requirements)
         bugData='{
@@ -44,15 +42,6 @@ steps:
           }
         }'
 
-        # Set the bugType to "Bug"
-        bugType="Bug"
-        
-        # Construct the correct URL using the actual organization and project
-        bugUrl="https://dev.azure.com/$organization/$project/_apis/wit/workitems/$bugType?api-version=7.1-preview.2"
-        
-        # Print the URL for debugging
-        echo "Bug URL: $bugUrl"
-        
         # Create a bug in Azure DevOps if tests fail
         curl -u :$pat \
           -X POST \

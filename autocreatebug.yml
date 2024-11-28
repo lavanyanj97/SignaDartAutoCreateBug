@@ -7,6 +7,9 @@ pool:
 variables:
   pythonVersion: '3.x'  # Specify the Python version to use
   bugType: 'Bug'  # Set the work item type (Bug)
+  azureDevOpsOrganization: 'SignaTechServicesIndia'  # Your Azure DevOps organization
+  azureDevOpsProject: 'SignaDart'  # Your Azure DevOps project
+  azureDevOpsPAT: $(azureDevOpsPAT)  # Personal Access Token stored in pipeline variables
 
 steps:
   # Install the specified Python version
@@ -33,31 +36,27 @@ steps:
       echo $? > pytest_exit_code.txt
     displayName: 'Run Selenium Tests'
 
-  # Check if tests passed or failed, then raise a bug if failed
+  # Create a Bug work item in Azure DevOps if tests fail
   - script: |
-      exit_code=$(cat pytest_exit_code.txt)
-      if [ $exit_code -ne 0 ]; then
-        echo "Tests failed. Creating a bug in Azure DevOps..."
+      exitCode=$(cat pytest_exit_code.txt)
+      if [ $exitCode -ne 0 ]; then
+        echo "Tests failed, creating a bug in Azure DevOps..."
 
-        # Escape the test results log to avoid breaking JSON
-        log_output=$(cat test_results.log | sed 's/"/\\"/g')
+        # Prepare the bug creation request
+        bugData='{
+          "fields": {
+            "System.Title": "Automated Bug: Selenium Tests Failed",
+            "System.Description": "Selenium tests failed during the pipeline run. Please check the logs for more details.",
+            "System.WorkItemType": "Bug",
+            "System.Tags": "Selenium, Bug"
+          }
+        }'
 
-        # Use Azure DevOps REST API to create a bug
-        curl -X POST -H "Content-Type: application/json" \
-          -H "Authorization: Bearer $(azureDevOpsPAT)" \
-          --data "{
-            \"fields\": {
-              \"System.Title\": \"Automated Test Failure: Selenium Tests\",
-              \"System.Description\": \"The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$log_output\",
-              \"System.Tags\": \"Automated; Bug\"
-            }
-          }" \
-          "https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/$bugType?api-version=6.0"
-
-        exit $exit_code
-      else
-        echo "All tests passed successfully."
+        # Create the bug work item using Azure DevOps REST API
+        curl -u :$(azureDevOpsPAT) \
+          -X POST \
+          -H "Content-Type: application/json" \
+          -d "$bugData" \
+          "https://dev.azure.com/$(azureDevOpsOrganization)/$(azureDevOpsProject)/_apis/wit/workitems/$bugType?api-version=7.1-preview.2"
       fi
-    displayName: 'Check Test Results and Raise Bug'
-    env:
-      azureDevOpsPAT: $(azureDevOpsPAT)
+    displayName: 'Create Bug if Tests Fail'

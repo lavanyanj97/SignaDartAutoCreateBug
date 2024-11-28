@@ -5,60 +5,50 @@ pool:
   vmImage: 'ubuntu-latest'  # Use an Ubuntu VM image for the pipeline
 
 variables:
-  pythonVersion: '3.x'  # Specify the Python version to use (3.x version will auto install the latest)
+  pythonVersion: '3.x'  # Specify the Python version to use (3.x version will auto-install the latest)
   azureDevOpsPAT: $(azureDevOpsPAT)  # Personal Access Token for Azure DevOps authentication
   organizationUrl: 'https://dev.azure.com/SignaTechServicesIndia'  # Replace with your Azure DevOps organization URL
-  projectName: 'SignaDart'  # Replace with your Azure DevOps project name
-  bugType: 'Bug'  # Set the bug type (ensure this is set correctly)
 
 steps:
-  # Use the Python version specified in the variables
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: $(pythonVersion)  # Select Python version to install
-      addToPath: true  # Adds Python to the system PATH
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '$(pythonVersion)'
+    addToPath: true
 
-  # Install Google Chrome on Ubuntu
-  - script: |
-      sudo apt-get update
-      sudo apt-get install -y google-chrome-stable  # Install Chrome on Ubuntu
-    displayName: 'Install Google Chrome'
+- script: |
+    echo "Running Tests..."
+    # Replace this with your actual test commands
+    pytest tests/
+  displayName: 'Run Tests'
 
-  # Install dependencies from requirements.txt
-  - script: |
-      python -m pip install --upgrade pip  # Upgrade pip to the latest version
-      pip install -r requirements.txt  # Install dependencies from the requirements.txt file
-    displayName: 'Install dependencies'
+- script: |
+    echo "Checking if tests failed..."
+    if grep -q "failed" test-results.log; then
+      echo "Tests failed, creating a bug in Azure DevOps..."
+      
+      # Construct JSON payload for the bug
+      bugPayload=$(cat <<EOF
+      {
+        "fields": {
+          "System.Title": "Automated Test Failure",
+          "System.Description": "Tests failed during the pipeline execution. Review the logs.",
+          "System.Tags": "Automated;Bug",
+          "System.WorkItemType": "Bug"
+        }
+      }
+      EOF
+      )
 
-  # Run the Selenium tests with pytest
-  - script: |
-      pytest test_update.py --maxfail=1 --disable-warnings -q > test_results.log 2>&1
-      echo $? > pytest_exit_code.txt
-    displayName: 'Run Selenium Tests'
+      # Create bug using Azure DevOps API
+      curl -X POST \
+           -H "Content-Type: application/json" \
+           -H "Authorization: Bearer $(AZUREDEVOPSPAT)" \
+           -d "$bugPayload" \
+           "$(organizationUrl)/_apis/wit/workitems/$Bug?api-version=6.0"
 
-  # Check pytest result and create a bug if tests fail
-  - script: |
-      exit_code=$(cat pytest_exit_code.txt)
-      if [ $exit_code -ne 0 ]; then
-        echo "Tests failed, creating a bug in Azure DevOps..."
-        
-        # Create a bug using Azure DevOps REST API
-        curl -X POST "https://dev.azure.com/$(organizationUrl)/_apis/wit/workitems/${bugType}?api-version=6.0" \
-        -H "Content-Type: application/json-patch+json" \
-        -H "Authorization: Basic $(echo -n ":$(azureDevOpsPAT)" | base64)" \
-        -d '[
-              {
-                "op": "add",
-                "path": "/fields/System.Title",
-                "value": "Bug triggered by failed tests"
-              },
-              {
-                "op": "add",
-                "path": "/fields/System.Description",
-                "value": "A bug was created because the tests failed. Check the test results for more details."
-              }
-            ]'
-      else
-        echo "Tests passed, no bug created."
-      fi
-    displayName: 'Create Bug in Azure DevOps if Tests Fail'
+    else
+      echo "Tests passed, no bug created."
+    fi
+  displayName: 'Create Bug in Azure DevOps if Tests Fail'
+  env:
+    AZUREDEVOPSPAT: $(AZUREDEVOPSPAT)  # Capitalized variable reference

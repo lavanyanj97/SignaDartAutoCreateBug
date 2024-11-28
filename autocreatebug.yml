@@ -4,18 +4,11 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'  # Use an Ubuntu VM image for the pipeline
 
-variables:
-  pythonVersion: '3.x'  # Specify the Python version to use
-  bugType: 'Bug'  # Set the work item type (Bug)
-  azureDevOpsOrganization: 'SignaTechServicesIndia'  # Organization name
-  azureDevOpsProject: 'SignaDart'  # Project name
-  azureDevOpsPAT: 'A0us9bS1c6qe5bub6CT5FGRR4JcmPDg7uadVFmw4D65bvtdPcBVdJQQJ99AKACAAAAAPnX9AAAASAZDO4GFA'  # Your actual PAT
-
 steps:
   # Install the specified Python version
   - task: UsePythonVersion@0
     inputs:
-      versionSpec: $(pythonVersion)
+      versionSpec: '3.x'
       addToPath: true
 
   # Install Google Chrome on the Ubuntu agent
@@ -38,6 +31,12 @@ steps:
       if [ $exitCode -ne 0 ]; then
         echo "Tests failed, creating a bug in Azure DevOps..."
         
+        # Hardcoded Azure DevOps values
+        organization="SignaTechServicesIndia"
+        project="SignaDart"
+        pat="A0us9bS1c6qe5bub6CT5FGRR4JcmPDg7uadVFmw4D65bvtdPcBVdJQQJ99AKACAAAAAPnX9AAAASAZDO4GFA"
+        bugType="Bug"
+        
         # Prepare the bug data (you can modify this data according to your requirements)
         bugData='{
           "fields": {
@@ -47,10 +46,10 @@ steps:
         }'
         
         # Create a bug in Azure DevOps if tests fail
-        curl -u :$(azureDevOpsPAT) \
+        curl -u :$pat \
           -X POST \
           -H "Content-Type: application/json" \
           -d "$bugData" \
-          "https://dev.azure.com/$(azureDevOpsOrganization)/$(azureDevOpsProject)/_apis/wit/workitems/$(bugType)?api-version=7.1-preview.2"
+          "https://dev.azure.com/$organization/$project/_apis/wit/workitems/$bugType?api-version=7.1-preview.2"
       fi
     displayName: 'Run Selenium Tests and Create Bug if Failed'

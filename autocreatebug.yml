@@ -41,7 +41,7 @@ steps:
         bugData='{
           "fields": {
             "System.Title": "Automated Bug: Selenium Test Failure",
-            "System.Description": "Automated bug created due to test failures.",
+            "System.Description": "Automated bug created due to test failures in Selenium tests.",
             "System.AssignedTo": {
               "id": "your-user-id"  # Optional: Set a user ID if you want to assign the bug
             },
@@ -54,6 +54,6 @@ steps:
           -X POST \
           -H "Content-Type: application/json" \
           -d "$bugData" \
-          "https://dev.azure.com/$(azureDevOpsOrganization)/$(azureDevOpsProject)/_apis/wit/workitems/$(bugType)?api-version=7.1-preview.2"
+          "https://dev.azure.com/$(azureDevOpsOrganization)/$(azureDevOpsProject)/_apis/wit/workitems/$bugType?api-version=7.1-preview.2"
       fi
     displayName: 'Run Selenium Tests and Create Bug if Failed'

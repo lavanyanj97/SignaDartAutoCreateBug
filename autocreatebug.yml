@@ -30,10 +30,13 @@ steps:
       echo $exitCode > pytest_exit_code.txt
       if [ $exitCode -ne 0 ]; then
         echo "Tests failed, creating a bug in Azure DevOps..."
-        
+
         # Hardcode the bug URL with the correct organization and project
         bugUrl="https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/Bug?api-version=7.1-preview.2"
         
+        # Print the URL to the console
+        echo "Bug creation URL: $bugUrl"
+
         # Prepare the bug data (you can modify this data according to your requirements)
         bugData='{
           "fields": {

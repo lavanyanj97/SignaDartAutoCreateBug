@@ -1,54 +1,61 @@
 trigger:
-- main  # Trigger the pipeline on changes to the main branch
+- main  # Trigger pipeline on changes to the 'main' branch
 
 pool:
-  vmImage: 'ubuntu-latest'  # Use an Ubuntu VM image for the pipeline
+  vmImage: 'ubuntu-latest'  # Use Ubuntu as the pipeline agent
 
 variables:
-  pythonVersion: '3.x'  # Specify the Python version to use (3.x version will auto-install the latest)
-  azureDevOpsPAT: $(azureDevOpsPAT)  # Personal Access Token for Azure DevOps authentication
+  # azureDevOpsPAT is stored as a secret variable in the Azure DevOps UI.
   organizationUrl: 'https://dev.azure.com/SignaTechServicesIndia'  # Replace with your Azure DevOps organization URL
 
 steps:
+# Step 1: Install Python and pytest
 - task: UsePythonVersion@0
   inputs:
-    versionSpec: '$(pythonVersion)'
+    versionSpec: '3.x'  # Use Python 3.x (latest)
     addToPath: true
 
 - script: |
-    echo "Running Tests..."
-    # Replace this with your actual test commands
-    pytest tests/
-  displayName: 'Run Tests'
+    python --version
+    pip install pytest
+  displayName: Install Python and pytest
 
+# Step 2: Run Tests
 - script: |
-    echo "Checking if tests failed..."
-    if grep -q "failed" test-results.log; then
-      echo "Tests failed, creating a bug in Azure DevOps..."
-      
-      # Construct JSON payload for the bug
-      bugPayload=$(cat <<EOF
-      {
-        "fields": {
-          "System.Title": "Automated Test Failure",
-          "System.Description": "Tests failed during the pipeline execution. Review the logs.",
-          "System.Tags": "Automated;Bug",
-          "System.WorkItemType": "Bug"
+    echo "Running Tests..."
+    pytest tests/  # Replace 'tests/' with the relative path to your test scripts
+  displayName: Run Tests
+
+# Step 3: Create a Bug in Azure DevOps if Tests Fail
+- script: |
+    echo "Checking test results and creating a bug if any tests fail..."
+    
+    # Check if the pytest command output indicates test failures
+    if [ $? -ne 0 ]; then
+        echo "Tests failed. Creating a bug in Azure DevOps..."
+        
+        # Define the JSON payload for the Azure DevOps bug
+        payload=$(cat <<EOF
+        {
+          "fields": {
+            "System.Title": "Automated Bug: Test Failures Detected",
+            "System.Description": "Automated bug created due to test failures in the pipeline.",
+            "System.Tags": "Automated, Pipeline",
+            "System.AssignedTo": "unassigned@yourorganization.com"  # Replace or remove as needed
+          }
         }
-      }
-      EOF
-      )
+        EOF
+        )
 
-      # Create bug using Azure DevOps API
-      curl -X POST \
-           -H "Content-Type: application/json" \
-           -H "Authorization: Bearer $(AZUREDEVOPSPAT)" \
-           -d "$bugPayload" \
-           "$(organizationUrl)/_apis/wit/workitems/$Bug?api-version=6.0"
-
+        # Make the API call to create the bug
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Basic $(echo -n ":$(AZUREDEVOPSPAT)" | base64)" \
+          -d "$payload" \
+          "$(organizationUrl)/_apis/wit/workitems/$type?api-version=6.0"
     else
-      echo "Tests passed, no bug created."
+        echo "All tests passed. No bug created."
     fi
-  displayName: 'Create Bug in Azure DevOps if Tests Fail'
+  displayName: Create Bug if Tests Fail
   env:
-    AZUREDEVOPSPAT: $(AZUREDEVOPSPAT)  # Capitalized variable reference
+    AZUREDEVOPSPAT: $(azureDevOpsPAT)  # Pass the secret PAT as an environment variable

@@ -1,61 +1,62 @@
 trigger:
-- main  # Trigger pipeline on changes to the 'main' branch
+- main  # Trigger the pipeline on changes to the main branch (adjust based on your branch)
 
 pool:
-  vmImage: 'ubuntu-latest'  # Use Ubuntu as the pipeline agent
+  vmImage: 'ubuntu-latest'  # Use an Ubuntu VM image for the pipeline
 
 variables:
-  # azureDevOpsPAT is stored as a secret variable in the Azure DevOps UI.
-  organizationUrl: 'https://dev.azure.com/SignaTechServicesIndia'  # Replace with your Azure DevOps organization URL
+  pythonVersion: '3.x'  # Specify the Python version to use (3.x version will auto install the latest)
+  bugType: 'Bug'  # Set the bug type (ensure this is set correctly)
 
 steps:
-# Step 1: Install Python and pytest
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.x'  # Use Python 3.x (latest)
-    addToPath: true
+  # Use the Python version specified in the variables
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: $(pythonVersion)  # Select Python version to install
+      addToPath: true  # Adds Python to the system PATH
 
-- script: |
-    python --version
-    pip install pytest
-  displayName: Install Python and pytest
+  # Install Google Chrome on Ubuntu
+  - script: |
+      sudo apt-get update
+      sudo apt-get install -y google-chrome-stable  # Install Chrome on Ubuntu
+    displayName: 'Install Google Chrome'
 
-# Step 2: Run Tests
-- script: |
-    echo "Running Tests..."
-    pytest tests/  # Replace 'tests/' with the relative path to your test scripts
-  displayName: Run Tests
+  # Install dependencies from requirements.txt
+  - script: |
+      python -m pip install --upgrade pip  # Upgrade pip to the latest version
+      pip install -r requirements.txt  # Install dependencies from the requirements.txt file
+    displayName: 'Install dependencies'
 
-# Step 3: Create a Bug in Azure DevOps if Tests Fail
-- script: |
-    echo "Checking test results and creating a bug if any tests fail..."
-    
-    # Check if the pytest command output indicates test failures
-    if [ $? -ne 0 ]; then
+  # Run the Selenium tests with pytest
+  - script: |
+      pytest test_update.py --maxfail=1 --disable-warnings -q > test_results.log 2>&1
+      echo $? > pytest_exit_code.txt
+    displayName: 'Run Selenium Tests'
+
+  # Check for test failures and raise a bug if any test fails
+  - script: |
+      exit_code=$(cat pytest_exit_code.txt)
+      if [ $exit_code -ne 0 ]; then
         echo "Tests failed. Creating a bug in Azure DevOps..."
         
-        # Define the JSON payload for the Azure DevOps bug
-        payload=$(cat <<EOF
-        {
-          "fields": {
-            "System.Title": "Automated Bug: Test Failures Detected",
-            "System.Description": "Automated bug created due to test failures in the pipeline.",
-            "System.Tags": "Automated, Pipeline",
-            "System.AssignedTo": "unassigned@yourorganization.com"  # Replace or remove as needed
-          }
-        }
-        EOF
-        )
+        # Ensure the PAT variable is passed correctly
+        echo "Using PAT: $AZURE_DEVOPS_PAT"  # Debug line (do not print PAT in production)
 
-        # Make the API call to create the bug
-        curl -X POST \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Basic $(echo -n ":$(AZUREDEVOPSPAT)" | base64)" \
-          -d "$payload" \
-          "$(organizationUrl)/_apis/wit/workitems/$type?api-version=6.0"
-    else
-        echo "All tests passed. No bug created."
-    fi
-  displayName: Create Bug if Tests Fail
-  env:
-    AZUREDEVOPSPAT: $(azureDevOpsPAT)  # Pass the secret PAT as an environment variable
+        # Corrected URL for creating a work item (Bug)
+        curl -X POST -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $AZURE_DEVOPS_PAT" \
+          --data "{\"fields\":{
+            \"System.Title\": \"Automated Test Failure: Selenium Tests\",
+            \"System.Description\": \"The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$(cat test_results.log | sed 's/\"/\\\"/g')\",
+            \"System.Tags\": \"Automated; Bug\",
+            \"System.WorkItemType\": \"$(bugType)\"
+          }}" \
+          "https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/${bugType}?api-version=6.0"
+        
+        exit $exit_code
+      else
+        echo "All tests passed successfully."
+      fi
+    displayName: 'Check Test Results and Raise Bug'
+    env:
+      AZURE_DEVOPS_PAT: $(azureDevOpsPAT)  # This passes the secret variable securely to the script

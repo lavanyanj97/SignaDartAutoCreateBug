@@ -42,7 +42,7 @@ steps:
     displayName: 'Debug Variable Resolution'
 
   # Check test results and raise a bug if tests fail
-  - script: |
+    - script: |
       exit_code=$(cat pytest_exit_code.txt)
       if [ $exit_code -ne 0 ]; then
         echo "Tests failed. Creating a bug in Azure DevOps..."
@@ -60,7 +60,7 @@ steps:
               \"System.Tags\": \"Automated; Bug\"
             }
           }" \
-          "https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/$(bugType)?api-version=6.0"
+          "https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/$Bug?api-version=6.0"
 
         exit $exit_code
       else
@@ -68,4 +68,4 @@ steps:
       fi
     displayName: 'Check Test Results and Raise Bug'
     env:
-      AZURE_DEVOPS_PAT: $(azureDevOpsPAT)  # Pass PAT securely as an environment variable
+      AZURE_DEVOPS_PAT: $(azureDevOpsPAT)

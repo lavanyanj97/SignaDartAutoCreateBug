@@ -44,12 +44,16 @@ steps:
             "System.Description": "Automated bug created due to test failures in Selenium tests."
           }
         }'
+
+        # Print the URL for debugging
+        bugUrl="https://dev.azure.com/$organization/$project/_apis/wit/workitems/$bugType?api-version=7.1-preview.2"
+        echo "Bug URL: $bugUrl"
         
         # Create a bug in Azure DevOps if tests fail
         curl -u :$pat \
           -X POST \
           -H "Content-Type: application/json" \
           -d "$bugData" \
-          "https://dev.azure.com/$organization/$project/_apis/wit/workitems/$bugType?api-version=7.1-preview.2"
+          "$bugUrl"
       fi
     displayName: 'Run Selenium Tests and Create Bug if Failed'

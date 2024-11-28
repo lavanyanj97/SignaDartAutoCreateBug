@@ -1,55 +1,59 @@
 trigger:
-- main  # Trigger on changes to the main branch
+- main  # Adjust the trigger as per your requirements
 
 pool:
-  vmImage: 'ubuntu-latest'  # Use an Ubuntu VM image for the pipeline
+  vmImage: 'ubuntu-latest'  # Choose your desired VM image (ubuntu, windows-latest, etc.)
 
-steps:
-  # Install the specified Python version
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.x'
-      addToPath: true
+variables:
+  organization: 'SignaTechServicesIndia'  # Your Azure DevOps organization
+  project: 'SignaDart'  # Your Azure DevOps project
+  bugType: 'Bug'  # Work item type, e.g., Bug
+  apiVersion: '7.1-preview.2'  # API version
 
-  # Install Google Chrome on the Ubuntu agent
-  - script: |
-      sudo apt-get update
-      sudo apt-get install -y google-chrome-stable
-    displayName: 'Install Google Chrome'
+stages:
+- stage: RunSeleniumAndCreateBug
+  jobs:
+  - job: RunTestsAndCreateBug
+    steps:
+    - task: UsePythonVersion@0  # Example task for setting up Python, remove if not needed
+      inputs:
+        versionSpec: '3.x'
+        addToPath: true
 
-  # Install dependencies from requirements.txt
-  - script: |
-      python -m pip install --upgrade pip
-      pip install -r requirements.txt
-    displayName: 'Install Python Dependencies'
+    - script: |
+        echo "Running Selenium Tests..."
+        # Add the command to run your Selenium tests here
+        # If tests fail, the script will proceed to create a bug
 
-  # Run the Selenium tests with pytest
-  - script: |
-      pytest test_update.py --maxfail=1 --disable-warnings -q > test_results.log 2>&1
-      exitCode=$?
-      echo $exitCode > pytest_exit_code.txt
-      if [ $exitCode -ne 0 ]; then
-        echo "Tests failed, creating a bug in Azure DevOps..."
+        testResult="failed"  # Simulate test result (replace with actual test result logic)
 
-        # Hardcode the bug URL with the correct organization and project
-        bugUrl="https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/Bug?api-version=7.1-preview.2"
-        
-        # Print the URL to the console
-        echo "Bug creation URL: $bugUrl"
+        if [ "$testResult" == "failed" ]; then
+          echo "Tests failed, creating a bug in Azure DevOps..."
+          
+          # Dynamically construct the URL with variables
+          bugUrl="https://dev.azure.com/$(organization)/$(project)/_apis/wit/workitems/$(bugType)?api-version=$(apiVersion)"
 
-        # Prepare the bug data (you can modify this data according to your requirements)
-        bugData='{
-          "fields": {
-            "System.Title": "Automated Bug: Selenium Test Failure",
-            "System.Description": "Automated bug created due to test failures in Selenium tests."
-          }
-        }'
+          echo "Bug creation URL: $bugUrl"
 
-        # Create a bug in Azure DevOps if tests fail
-        curl -u :$pat \
-          -X POST \
-          -H "Content-Type: application/json" \
-          -d "$bugData" \
-          "$bugUrl"
-      fi
-    displayName: 'Run Selenium Tests and Create Bug if Failed'
+          # Example of creating a bug using curl (replace with actual bug creation logic)
+          bugData='{
+            "fields": {
+              "System.Title": "Automated Bug: Selenium Test Failure",
+              "System.Description": "Automated bug created due to test failures in Selenium tests."
+            }
+          }'
+          
+          # Use curl to create the bug
+          curl -u :$(System.AccessToken) \
+            -X POST \
+            -H "Content-Type: application/json-patch+json" \
+            -d "$bugData" \
+            "$bugUrl"
+        else
+          echo "Tests passed successfully!"
+        fi
+      displayName: 'Run Selenium Tests and Create Bug if Failed'
+
+    - script: |
+        echo "Bug URL using placeholders: https://dev.azure.com/$(organization)/$(project)/_apis/wit/workitems/$(bugType)?api-version=$(apiVersion)"
+      displayName: 'Display the Bug URL'

@@ -33,31 +33,36 @@ steps:
       echo $? > pytest_exit_code.txt
     displayName: 'Run Selenium Tests'
 
-  # Check test results and raise a bug if tests fail
   - script: |
-      exit_code=$(cat pytest_exit_code.txt)
-      if [ $exit_code -ne 0 ]; then
-        echo "Tests failed. Creating a bug in Azure DevOps..."
+    exit_code=$(cat pytest_exit_code.txt)
+    if [ $exit_code -ne 0 ]; then
+      echo "Tests failed. Creating a bug in Azure DevOps..."
 
-        # Read and escape the test results log
-        log_output=$(cat test_results.log | sed 's/"/\\"/g')
+      # Escape the test results log for JSON
+      log_output=$(cat test_results.log | sed 's/"/\\"/g')
 
-        # Use Azure DevOps API to create a bug
-        curl -X POST -H "Content-Type: application/json" \
-          -H "Authorization: Bearer $AZURE_DEVOPS_PAT" \
-          --data "{
-            \"fields\": {
-              \"System.Title\": \"Automated Test Failure: Selenium Tests\",
-              \"System.Description\": \"The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$log_output\",
-              \"System.Tags\": \"Automated; Bug\"
-            }
-          }" \
-          "https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/$Bug?api-version=6.0"
-
-        exit $exit_code
-      else
-        echo "All tests passed successfully."
+      # Ensure the bugType variable is correctly expanded
+      if [ -z "$bugType" ]; then
+        bugType="Bug"  # Fallback to "Bug" if not set
       fi
-    displayName: 'Check Test Results and Raise Bug'
-    env:
-      AZURE_DEVOPS_PAT: $(azureDevOpsPAT)
+
+      # Use Azure DevOps API to create a bug
+      curl -X POST -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $AZURE_DEVOPS_PAT" \
+        --data "{
+          \"fields\": {
+            \"System.Title\": \"Automated Test Failure: Selenium Tests\",
+            \"System.Description\": \"The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$log_output\",
+            \"System.Tags\": \"Automated; Bug\"
+          }
+        }" \
+        "https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/$bugType?api-version=6.0"
+
+      # Exit with the pytest failure code
+      exit $exit_code
+    else
+      echo "All tests passed successfully."
+    fi
+  displayName: 'Check Test Results and Raise Bug'
+  env:
+    AZURE_DEVOPS_PAT: $(azureDevOpsPAT)  # Securely pass the PAT

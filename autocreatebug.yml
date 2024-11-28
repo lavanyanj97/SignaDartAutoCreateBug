@@ -7,9 +7,8 @@ pool:
 variables:
   pythonVersion: '3.x'  # Specify the Python version to use
   bugType: 'Bug'  # Set the work item type (Bug)
-  azureDevOpsPAT: $(azureDevOpsPAT)  # Personal Access Token stored in pipeline variables
-  azureDevOpsOrganization: 'SignaTechServicesIndia'  # Your Azure DevOps organization
-  azureDevOpsProject: 'SignaDart'  # Your Azure DevOps project
+  # These variables are assumed to be set as pipeline variables (secret) in Azure DevOps UI
+  # e.g., azureDevOpsOrganization, azureDevOpsProject, azureDevOpsPAT
 
 steps:
   # Install the specified Python version
@@ -33,29 +32,28 @@ steps:
   # Run the Selenium tests with pytest
   - script: |
       pytest test_update.py --maxfail=1 --disable-warnings -q > test_results.log 2>&1
-      echo $? > pytest_exit_code.txt
-    displayName: 'Run Selenium Tests'
-
-  # Create a Bug work item in Azure DevOps if tests fail
-  - script: |
-      exitCode=$(cat pytest_exit_code.txt)
+      exitCode=$?
+      echo $exitCode > pytest_exit_code.txt
       if [ $exitCode -ne 0 ]; then
         echo "Tests failed, creating a bug in Azure DevOps..."
-
-        # Prepare the bug creation request
+        
+        # Prepare the bug data (you can modify this data according to your requirements)
         bugData='{
           "fields": {
-            "System.Title": "Automated Bug: Selenium Tests Failed",
-            "System.Description": "Selenium tests failed during the pipeline run. Please check the logs for more details.",
-            "System.WorkItemType": "Bug"
+            "System.Title": "Automated Bug: Selenium Test Failure",
+            "System.Description": "Automated bug created due to test failures.",
+            "System.AssignedTo": {
+              "id": "your-user-id"  # Optional: Set a user ID if you want to assign the bug
+            },
+            "System.Tags": "Automated, Selenium Test"
           }
         }'
-
-        # Create the bug work item using Azure DevOps REST API
+        
+        # Create a bug in Azure DevOps if tests fail
         curl -u :$(azureDevOpsPAT) \
           -X POST \
           -H "Content-Type: application/json" \
           -d "$bugData" \
-          "https://dev.azure.com/$(azureDevOpsOrganization)/$(azureDevOpsProject)/_apis/wit/workitems/$bugType?api-version=7.1-preview.2"
+          "https://dev.azure.com/$(azureDevOpsOrganization)/$(azureDevOpsProject)/_apis/wit/workitems/$(bugType)?api-version=7.1-preview.2"
       fi
-    displayName: 'Create Bug if Tests Fail'
+    displayName: 'Run Selenium Tests and Create Bug if Failed'

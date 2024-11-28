@@ -1,62 +1,71 @@
 trigger:
-- main  # Trigger the pipeline on changes to the main branch (adjust based on your branch)
+- main  # Trigger the pipeline on changes to the main branch
 
 pool:
   vmImage: 'ubuntu-latest'  # Use an Ubuntu VM image for the pipeline
 
 variables:
-  pythonVersion: '3.x'  # Specify the Python version to use (3.x version will auto install the latest)
-  bugType: 'Bug'  # Set the bug type (ensure this is set correctly)
+  pythonVersion: '3.x'  # Specify the Python version to use
+  bugType: 'Bug'  # Set the work item type to 'Bug'
 
 steps:
-  # Use the Python version specified in the variables
+  # Use the specified Python version
   - task: UsePythonVersion@0
     inputs:
-      versionSpec: $(pythonVersion)  # Select Python version to install
-      addToPath: true  # Adds Python to the system PATH
+      versionSpec: $(pythonVersion)
+      addToPath: true
+    displayName: 'Set up Python'
 
-  # Install Google Chrome on Ubuntu
+  # Install Google Chrome
   - script: |
       sudo apt-get update
-      sudo apt-get install -y google-chrome-stable  # Install Chrome on Ubuntu
+      sudo apt-get install -y google-chrome-stable
     displayName: 'Install Google Chrome'
 
-  # Install dependencies from requirements.txt
+  # Install dependencies
   - script: |
-      python -m pip install --upgrade pip  # Upgrade pip to the latest version
-      pip install -r requirements.txt  # Install dependencies from the requirements.txt file
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
     displayName: 'Install dependencies'
 
-  # Run the Selenium tests with pytest
+  # Run Selenium tests with pytest
   - script: |
       pytest test_update.py --maxfail=1 --disable-warnings -q > test_results.log 2>&1
       echo $? > pytest_exit_code.txt
     displayName: 'Run Selenium Tests'
 
-  # Check for test failures and raise a bug if any test fails
+  # Debug variable resolution (optional for troubleshooting)
+  - script: |
+      echo "Debugging Variable Resolution"
+      echo "Bug type: $(bugType)"
+      echo "URL: https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/$(bugType)?api-version=6.0"
+    displayName: 'Debug Variable Resolution'
+
+  # Check test results and raise a bug if tests fail
   - script: |
       exit_code=$(cat pytest_exit_code.txt)
       if [ $exit_code -ne 0 ]; then
         echo "Tests failed. Creating a bug in Azure DevOps..."
-        
-        # Ensure the PAT variable is passed correctly
-        echo "Using PAT: $AZURE_DEVOPS_PAT"  # Debug line (do not print PAT in production)
 
-        # Corrected URL for creating a work item (Bug)
+        # Read the test results log and escape special characters
+        log_output=$(cat test_results.log | sed 's/"/\\"/g')
+
+        # Use Azure DevOps API to create a bug
         curl -X POST -H "Content-Type: application/json" \
           -H "Authorization: Bearer $AZURE_DEVOPS_PAT" \
-          --data "{\"fields\":{
-            \"System.Title\": \"Automated Test Failure: Selenium Tests\",
-            \"System.Description\": \"The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$(cat test_results.log | sed 's/\"/\\\"/g')\",
-            \"System.Tags\": \"Automated; Bug\",
-            \"System.WorkItemType\": \"$(bugType)\"
-          }}" \
-          "https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/${bugType}?api-version=6.0"
-        
+          --data "{
+            \"fields\": {
+              \"System.Title\": \"Automated Test Failure: Selenium Tests\",
+              \"System.Description\": \"The Selenium tests failed during the pipeline execution. Please investigate the issue.\\n\\nLog output:\\n$log_output\",
+              \"System.Tags\": \"Automated; Bug\"
+            }
+          }" \
+          "https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/$(bugType)?api-version=6.0"
+
         exit $exit_code
       else
         echo "All tests passed successfully."
       fi
     displayName: 'Check Test Results and Raise Bug'
     env:
-      AZURE_DEVOPS_PAT: $(azureDevOpsPAT)  # This passes the secret variable securely to the script
+      AZURE_DEVOPS_PAT: $(azureDevOpsPAT)  # Pass PAT securely as an environment variable

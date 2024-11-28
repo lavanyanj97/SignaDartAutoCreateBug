@@ -1,31 +1,31 @@
 trigger:
-- main  # Trigger the pipeline on changes to the main branch (adjust based on your branch)
+- main  # Trigger on changes to the main branch
 
 pool:
   vmImage: 'ubuntu-latest'  # Use an Ubuntu VM image for the pipeline
 
 variables:
-  pythonVersion: '3.x'  # Specify the Python version to use (3.x version will auto install the latest)
-  bugType: 'Bug'  # Set the bug type (ensure this is set correctly)
+  pythonVersion: '3.x'  # Specify the Python version to use
+  bugType: 'Bug'  # Set the work item type (Bug)
 
 steps:
-  # Use the Python version specified in the variables
+  # Install the specified Python version
   - task: UsePythonVersion@0
     inputs:
-      versionSpec: $(pythonVersion)  # Select Python version to install
-      addToPath: true  # Adds Python to the system PATH
+      versionSpec: $(pythonVersion)
+      addToPath: true
 
-  # Install Google Chrome on Ubuntu
+  # Install Google Chrome on the Ubuntu agent
   - script: |
       sudo apt-get update
-      sudo apt-get install -y google-chrome-stable  # Install Chrome on Ubuntu
+      sudo apt-get install -y google-chrome-stable
     displayName: 'Install Google Chrome'
 
   # Install dependencies from requirements.txt
   - script: |
-      python -m pip install --upgrade pip  # Upgrade pip to the latest version
-      pip install -r requirements.txt  # Install dependencies from the requirements.txt file
-    displayName: 'Install dependencies'
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+    displayName: 'Install Python Dependencies'
 
   # Run the Selenium tests with pytest
   - script: |
@@ -33,23 +33,18 @@ steps:
       echo $? > pytest_exit_code.txt
     displayName: 'Run Selenium Tests'
 
-  # Check for test failures and raise a bug if any test fails
+  # Check if tests passed or failed, then raise a bug if failed
   - script: |
       exit_code=$(cat pytest_exit_code.txt)
       if [ $exit_code -ne 0 ]; then
         echo "Tests failed. Creating a bug in Azure DevOps..."
 
-        # Escape the test results log for JSON
+        # Escape the test results log to avoid breaking JSON
         log_output=$(cat test_results.log | sed 's/"/\\"/g')
 
-        # Ensure the bugType variable is correctly expanded
-        if [ -z "$bugType" ]; then
-          bugType="Bug"  # Fallback to "Bug" if not set
-        fi
-
-        # Use Azure DevOps API to create a bug
+        # Use Azure DevOps REST API to create a bug
         curl -X POST -H "Content-Type: application/json" \
-          -H "Authorization: Bearer $AZURE_DEVOPS_PAT" \
+          -H "Authorization: Bearer $(azureDevOpsPAT)" \
           --data "{
             \"fields\": {
               \"System.Title\": \"Automated Test Failure: Selenium Tests\",
@@ -59,11 +54,10 @@ steps:
           }" \
           "https://dev.azure.com/SignaTechServicesIndia/SignaDart/_apis/wit/workitems/$bugType?api-version=6.0"
 
-        # Exit with the pytest failure code
         exit $exit_code
       else
         echo "All tests passed successfully."
       fi
     displayName: 'Check Test Results and Raise Bug'
     env:
-      AZURE_DEVOPS_PAT: $(azureDevOpsPAT)  # Securely pass the PAT
+      azureDevOpsPAT: $(azureDevOpsPAT)

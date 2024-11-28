@@ -7,8 +7,9 @@ pool:
 variables:
   pythonVersion: '3.x'  # Specify the Python version to use
   bugType: 'Bug'  # Set the work item type (Bug)
-  # These variables are assumed to be set as pipeline variables (secret) in Azure DevOps UI
-  # e.g., azureDevOpsOrganization, azureDevOpsProject, azureDevOpsPAT
+  azureDevOpsOrganization: 'SignaTechServicesIndia'  # Organization name
+  azureDevOpsProject: 'SignaDart'  # Project name
+  azureDevOpsPAT: 'A0us9bS1c6qe5bub6CT5FGRR4JcmPDg7uadVFmw4D65bvtdPcBVdJQQJ99AKACAAAAAPnX9AAAASAZDO4GFA'  # Your actual PAT
 
 steps:
   # Install the specified Python version
@@ -41,11 +42,7 @@ steps:
         bugData='{
           "fields": {
             "System.Title": "Automated Bug: Selenium Test Failure",
-            "System.Description": "Automated bug created due to test failures in Selenium tests.",
-            "System.AssignedTo": {
-              "id": "your-user-id"  # Optional: Set a user ID if you want to assign the bug
-            },
-            "System.Tags": "Automated, Selenium Test"
+            "System.Description": "Automated bug created due to test failures in Selenium tests."
           }
         }'
         
@@ -54,6 +51,6 @@ steps:
           -X POST \
           -H "Content-Type: application/json" \
           -d "$bugData" \
-          "https://dev.azure.com/$(azureDevOpsOrganization)/$(azureDevOpsProject)/_apis/wit/workitems/$bugType?api-version=7.1-preview.2"
+          "https://dev.azure.com/$(azureDevOpsOrganization)/$(azureDevOpsProject)/_apis/wit/workitems/$(bugType)?api-version=7.1-preview.2"
       fi
     displayName: 'Run Selenium Tests and Create Bug if Failed'
